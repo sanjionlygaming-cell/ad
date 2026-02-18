@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Password + Location Ads Map</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    background:#020617;
+    color:white;
+}
+
+/* PASSWORD SECTION */
+.hero{
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.card{
+    background:#1e293b;
+    padding:40px;
+    border-radius:16px;
+    width:420px;
+    text-align:center;
+}
+
+input{
+    width:100%;
+    padding:14px;
+    border-radius:10px;
+    border:none;
+    margin-top:15px;
+}
+
+/* BAR */
+.bar{
+    height:14px;
+    background:#334155;
+    border-radius:10px;
+    margin-top:18px;
+    overflow:hidden;
+}
+
+.fill{
+    height:100%;
+    width:0%;
+    background:red;
+    transition:0.4s;
+}
+
+button{
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    background:#22c55e;
+    font-weight:bold;
+    cursor:pointer;
+    margin-top:20px;
+}
+
+#status{
+    margin-top:10px;
+    font-size:14px;
+    color:#94a3b8;
+}
+
+.mapSection{
+    padding:50px;
+}
+
+#map{
+    height:550px;
+    border-radius:14px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- PASSWORD -->
+<section class="hero">
+<div class="card">
+
+<h2>Password Strength Checker</h2>
+
+<input type="password" id="pwd" placeholder="Enter password" oninput="checkPassword()">
+
+<div class="bar">
+<div class="fill" id="fill"></div>
+</div>
+
+<div id="text">Type password</div>
+
+<button onclick="getLocation()">📍 Load Nearby Deals Map</button>
+<div id="status">Waiting for location request...</div>
+
+</div>
+</section>
+
+<!-- MAP -->
+<section class="mapSection">
+<h2>Nearby Deals Map</h2>
+<div id="map"></div>
+</section>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+/* PASSWORD CHECK — FIXED */
+function checkPassword(){
+
+ let pwd = document.getElementById("pwd").value;
+ let fill = document.getElementById("fill");
+ let text = document.getElementById("text");
+
+ if(!fill || !text) return;
+
+ // RESET IF EMPTY
+ if(pwd.length === 0){
+  fill.style.width = "0%";
+  text.innerText = "Type password";
+  return;
+ }
+
+ let score = 0;
+
+ if(pwd.length >= 8) score++;
+ if(/[A-Z]/.test(pwd)) score++;
+ if(/[0-9]/.test(pwd)) score++;
+ if(/[^A-Za-z0-9]/.test(pwd)) score++;
+
+ if(score <= 1){
+  fill.style.width = "30%";
+  fill.style.background = "red";
+  text.innerText = "Weak";
+ }
+ else if(score == 2){
+  fill.style.width = "60%";
+  fill.style.background = "orange";
+  text.innerText = "Medium";
+ }
+ else{
+  fill.style.width = "100%";
+  fill.style.background = "lime";
+  text.innerText = "Strong";
+ }
+
+}
+
+/* MAP SETUP */
+var map=L.map('map').setView([20.5937,78.9629],5);
+
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+ maxZoom:19
+}).addTo(map);
+
+let markers=[];
+
+/* LOCATION */
+function getLocation(){
+
+ document.getElementById("status").innerText="Requesting location permission...";
+
+ if(!navigator.geolocation){
+  document.getElementById("status").innerText="Geolocation not supported";
+  return;
+ }
+
+ navigator.geolocation.getCurrentPosition(showPosition,showError,{
+  enableHighAccuracy:true,
+  timeout:10000
+ });
+}
+
+function showPosition(pos){
+
+ let lat=pos.coords.latitude;
+ let lng=pos.coords.longitude;
+
+ document.getElementById("status").innerText=
+ "Location found: "+lat.toFixed(4)+", "+lng.toFixed(4);
+
+ map.setView([lat,lng],15);
+
+ clearMarkers();
+
+ let userMarker=L.marker([lat,lng])
+  .addTo(map)
+  .bindPopup("You are here")
+  .openPopup();
+
+ markers.push(userMarker);
+
+ addAds(lat,lng);
+}
+
+function showError(err){
+ document.getElementById("status").innerText=
+ "Location failed: "+err.message;
+}
+
+/* CLEAR MARKERS */
+function clearMarkers(){
+ markers.forEach(m=>map.removeLayer(m));
+ markers=[];
+}
+
+/* ADD 20 ADS */
+function addAds(lat,lng){
+
+ let types=[
+  "Pure Veg Restaurant",
+  "Veg Meals Center",
+  "Supermarket Deals",
+  "Clothing Store Sale",
+  "Electronics Shop",
+  "Veg Snacks Cafe",
+  "Organic Veg Store",
+  "Footwear Shop",
+  "Stationery Store",
+  "Home Essentials Shop"
+ ];
+
+ for(let i=0;i<20;i++){
+
+  let randLat=lat+(Math.random()-0.5)*0.02;
+  let randLng=lng+(Math.random()-0.5)*0.02;
+
+  let type=types[Math.floor(Math.random()*types.length)];
+
+  let marker=L.marker([randLat,randLng])
+   .addTo(map)
+   .bindPopup(type+"<br>Local Deal Available");
+
+  markers.push(marker);
+ }
+}
+
+</script>
+
+</body>
+</html>
